@@ -1,0 +1,103 @@
+buildscript {
+  repositories {
+    jcenter()
+  }
+  dependencies {
+    classpath 'org.standardout:gradle-eclipseconfig:1.0.0'
+  }
+}
+
+apply plugin: 'groovy'
+apply plugin: 'maven-publish'
+apply plugin: 'org.standardout.eclipseconfig'
+
+eclipseconfig {
+  jdtUI { properties ->
+    // make private fields final on save, if possible
+    properties.'sp_cleanup.make_variable_declarations_final' = true
+    properties.'sp_cleanup.make_private_fields_final' = true
+  }
+}
+
+group = 'eu.esdihumboldt'
+version = '1.0.0-SNAPSHOT'
+
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+project.ext {
+  haleVersion = '2.9.5-SNAPSHOT'
+  deegreeVersion = '3.3.18'
+}
+
+repositories {
+  maven { // wetransform release repository (HALE releases and Eclipse dependencies)
+    url 'https://artifactory.wetransform.to/artifactory/libs-release-local'
+  }
+  maven { // wetransform snapshot repository (HALE snapshots)
+    url 'https://artifactory.wetransform.to/artifactory/libs-snapshot-local'
+  }
+
+  // this needs to be defined before jcenter/MavenCentral for retrieving JAI
+  maven {
+    url 'http://download.osgeo.org/webdav/geotools/'
+  }
+
+  maven { // HALE artifactory (dependencies for HALE)
+    url 'http://artifactory.esdi-humboldt.eu/artifactory/libs-release/'
+  }
+
+  jcenter()
+
+  maven { // deegree public repository
+    url 'http://repo.deegree.org/content/groups/public/'
+  }
+
+  maven {
+    url 'http://repo.opengeo.org'
+  }
+}
+
+dependencies {
+  // hale
+  compile 'eu.esdihumboldt.unpuzzled:org.eclipse.equinox.nonosgi.registry:1.0.0'
+  compile "eu.esdihumboldt.hale:eu.esdihumboldt.hale.common.convert.core:$haleVersion"
+  compile "eu.esdihumboldt.hale:eu.esdihumboldt.hale.io.xsd:$haleVersion"
+  compile "eu.esdihumboldt.hale:eu.esdihumboldt.hale.io.xml:$haleVersion"
+  compile "eu.esdihumboldt.hale:eu.esdihumboldt.hale.io.gml:$haleVersion"
+  compile "eu.esdihumboldt.hale:eu.esdihumboldt.hale.io.wfs:$haleVersion"
+  // resource cache (OpenGIS schemas, INSPIRE schemas, W3C schemas, etc.)
+  compile(group: 'eu.esdihumboldt.hale', name: 'eu.esdihumboldt.util.resource', version: haleVersion)
+  compile(group: 'eu.esdihumboldt.hale', name: 'eu.esdihumboldt.util.resource.schemas.opengis.net', version: '2015.10.27')
+  compile(group: 'eu.esdihumboldt.hale', name: 'eu.esdihumboldt.util.resource.schemas.inspire', version: '2015.10.27')
+  compile(group: 'eu.esdihumboldt.hale', name: 'eu.esdihumboldt.util.resource.schemas.portele.de', version: '2015.10.27')
+  compile(group: 'eu.esdihumboldt.hale', name: 'eu.esdihumboldt.util.resource.w3.org', version: '2015.10.27')
+
+  // deegree
+  compile "org.deegree:deegree-core-base:$deegreeVersion", {
+    exclude group: 'commons-logging', module: 'commons-logging'
+    exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    exclude group: 'log4j'
+  }
+
+  // logging
+  compile 'org.slf4j:log4j-over-slf4j:1.7.21'
+  compile 'ch.qos.logback:logback-core:1.1.6'
+  compile 'ch.qos.logback:logback-classic:1.1.6'
+  compile(group: 'eu.esdihumboldt.unpuzzled', name: 'de.fhg.igd.slf4jplus.logback.appender', version: '1.2.0.201503311443')
+
+  testCompile 'junit:junit:4.12'
+}
+
+configurations.all {
+  // ensure SNAPSHOTs are updated every time if needed
+  // resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+}
+
+publishing {
+  publications {
+    mavenJava(MavenPublication) {
+      from components.java
+    }
+  }
+}
